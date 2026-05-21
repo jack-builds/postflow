@@ -1,183 +1,139 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { updatePostStatus } from "@/lib/update-post-status";
-import { deletePost } from "@/lib/delete-post";
 
 type Post = {
   id: string;
-  generated_post: string;
-  status: "draft" | "approved" | "queued";
+  content: string;
+  repo: string;
+  tone: string;
+  status: string;
+  created_at: string;
 };
 
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<any>(null);
 
-  async function loadPosts() {
-    const { data } = await supabaseBrowser
-      .from("posts")
-      .select("*")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    setPosts(data || []);
-  }
-
+  // -----------------------
+  // LOAD SESSION
+  // -----------------------
   useEffect(() => {
-    loadPosts();
+    const loadSession = async () => {
+      const { data } = await supabaseBrowser.auth.getSession();
+      setSession(data.session);
+    };
+
+    loadSession();
   }, []);
 
-  async function refresh() {
-    await loadPosts();
+  // -----------------------
+  // FETCH POSTS
+  // -----------------------
+  const fetchPosts = async () => {
+    const { data: sessionData } =
+      await supabaseBrowser.auth.getSession();
+
+    const userId = sessionData.session?.user?.id;
+
+    if (!userId) return;
+
+    const { data, error } = await supabaseBrowser
+      .from("posts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (!error) {
+      setPosts(data || []);
+    }
+
+    setLoading(false);
+  };
+
+  // -----------------------
+  // INITIAL + REFRESH LOOP
+  // -----------------------
+  useEffect(() => {
+    fetchPosts();
+
+    const interval = setInterval(() => {
+      fetchPosts();
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // -----------------------
+  // LOADING
+  // -----------------------
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center text-sm text-zinc-500">
+        Loading posts...
+      </div>
+    );
   }
 
-  const draftPosts = posts.filter(
-    (p) => p.status === "draft"
-  );
-
-  const approvedPosts = posts.filter(
-    (p) => p.status === "approved"
-  );
-
-  const queuedPosts = posts.filter(
-    (p) => p.status === "queued"
-  );
-
+  // -----------------------
+  // UI
+  // -----------------------
   return (
-    <div className="space-y-10">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        Content Queue
-      </h1>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">
+          Your Posts
+        </h1>
 
-      {/* DRAFTS */}
-      <Section title="Drafts">
-        {draftPosts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onRefresh={refresh}
-          />
-        ))}
-      </Section>
-
-      {/* APPROVED */}
-      <Section title="Approved">
-        {approvedPosts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onRefresh={refresh}
-          />
-        ))}
-      </Section>
-
-      {/* QUEUED */}
-      <Section title="Queued">
-        {queuedPosts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onRefresh={refresh}
-          />
-        ))}
-      </Section>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-medium text-zinc-300">
-        {title}
-      </h2>
-
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function PostCard({
-  post,
-  onRefresh,
-}: {
-  post: any;
-  onRefresh: () => void;
-}) {
-  return (
-    <Card className="space-y-4">
-      <p className="whitespace-pre-wrap text-sm text-zinc-200">
-        {post.generated_post}
-      </p>
-
-      <div className="flex gap-2">
-        {post.status !== "approved" && (
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await updatePostStatus(
-                post.id,
-                "approved"
-              );
-              onRefresh();
-            }}
-          >
-            Approve
-          </Button>
-        )}
-
-        {post.status === "approved" && (
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await updatePostStatus(
-                post.id,
-                "draft"
-              );
-              onRefresh();
-            }}
-          >
-            Unapprove
-          </Button>
-        )}
-
-        {post.status !== "queued" && (
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await updatePostStatus(
-                post.id,
-                "queued"
-              );
-              onRefresh();
-            }}
-          >
-            Queue
-          </Button>
-        )}
-
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            await deletePost(post.id);
-            onRefresh();
-          }}
-        >
-          Delete
-        </Button>
+        <p className="text-sm text-zinc-500">
+          Generated content from your development activity
+        </p>
       </div>
-    </Card>
+
+      {/* POSTS LIST */}
+      <div className="space-y-4">
+        {posts.length === 0 && (
+          <div className="text-sm text-zinc-500">
+            No posts yet. Generate some content first.
+          </div>
+        )}
+
+        {posts.map((post) => (
+          <div
+            key={post.id}
+            className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950"
+          >
+            {/* HEADER */}
+            <div className="mb-3 flex items-center justify-between text-xs text-zinc-500">
+              <div>
+                {post.repo || "unknown repo"}
+              </div>
+
+              <div className="flex gap-2">
+                <span className="rounded-full border px-2 py-0.5">
+                  {post.tone}
+                </span>
+
+                <span className="rounded-full border px-2 py-0.5">
+                  {post.status}
+                </span>
+              </div>
+            </div>
+
+            {/* CONTENT */}
+            <p className="whitespace-pre-wrap text-sm leading-7">
+              {post.content}
+            </p>
+
+            {/* FOOTER */}
+            <div className="mt-4 text-xs text-zinc-400">
+              {new Date(post.created_at).toLocaleString()}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

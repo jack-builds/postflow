@@ -2,26 +2,83 @@ import { generateContext } from "./openai";
 import { buildPostPrompt } from "./build-post-prompt";
 
 type GeneratePostsInput = {
-  summary: string;
-  stage: string;
+  repo: string;
+  commitMessages: string;
   tone: string;
+  count: number;
   extraInstructions?: string;
-  postCount?: number;
 };
 
-export async function generatePosts(
-  input: GeneratePostsInput
-) {
-  const prompt = buildPostPrompt(input);
+type Post = {
+  tone: string;
+  content: string;
+};
 
-  const response = await generateContext(
-    prompt,
-    {
-      temperature: 0.7,
-      systemPrompt:
-        "You write concise developer build-in-public posts.",
-    }
-  );
+function safeParse(raw: string): Post[] {
+  try {
+    const parsed = JSON.parse(raw);
 
-  return response;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(
+        (p) =>
+          p &&
+          typeof p === "object" &&
+          typeof p.content === "string"
+      )
+      .map((p) => ({
+        tone: typeof p.tone === "string" ? p.tone : "dev",
+        content: p.content.trim(),
+      }));
+  } catch (err) {
+    console.error("❌ Failed to parse AI output:");
+    console.error(raw);
+    return [];
+  }
+}
+
+export async function generatePosts({
+  repo,
+  commitMessages,
+  tone,
+  count,
+  extraInstructions,
+}: GeneratePostsInput) {
+  // -----------------------
+  // BUILD PROMPT
+  // -----------------------
+  const prompt = buildPostPrompt({
+    repo,
+    commitMessages,
+    tone,
+    count,
+    extraInstructions,
+  });
+
+  // -----------------------
+  // CALL OPENAI
+  // -----------------------
+  const raw = await generateContext(prompt);
+
+  // -----------------------
+  // PARSE + ENFORCE
+  // -----------------------
+  const posts = safeParse(raw);
+
+  // -----------------------
+  // HARD GUARANTEE OUTPUT SHAPE
+  // -----------------------
+  if (!posts.length) {
+    return [
+      {
+        tone: "dev",
+        content:
+          "No valid posts could be generated from the commit data.",
+      },
+    ];
+  }
+
+  // enforce count strictly
+  return posts.slice(0, count);
 }

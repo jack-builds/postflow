@@ -1,38 +1,26 @@
 type PromptOptions = {
-  summary: string;
-  stage: string;
+  repo: string;
+  commitMessages: string;
   tone: string;
   extraInstructions?: string;
-  postCount?: number;
+  count: number;
 };
 
 export function buildPostPrompt({
-  summary,
-  stage,
+  repo,
+  commitMessages,
   tone,
   extraInstructions,
-  postCount = 3,
+  count,
 }: PromptOptions) {
   return `
-You are helping a software developer write authentic build-in-public posts.
+You are an expert technical writer helping a developer turn git activity into high-quality build-in-public posts.
 
-STRICT RULES:
-- No cringe marketing language
-- No corporate tone
-- No hype-thread energy
-- Minimal emojis
-- Sound like a real developer
-- Keep posts concise
-- Use developer-native wording
-- Avoid sounding AI-generated
-- Focus on actual engineering progress
-- Natural tone only
+Repository:
+${repo}
 
-Development Stage:
-${stage}
-
-Selected Development Context:
-${summary}
+Git Commits:
+${commitMessages}
 
 Tone:
 ${tone}
@@ -40,14 +28,22 @@ ${tone}
 Extra Instructions:
 ${extraInstructions || "None"}
 
-Generate ${postCount} unique posts.
+Generate ${count} posts.
 
-Each post should:
-- feel authentic
-- sound technical but readable
-- avoid hashtags
-- avoid clickbait
-- avoid startup clichés
-- be clean and minimal
+STRICT RULES:
+- No marketing language
+- No hype
+- No emojis
+- No hashtags
+- Must sound like a real developer
+
+Return ONLY JSON:
+
+[
+  {
+    "tone": "${tone}",
+    "content": "post text here"
+  }
+]
 `;
 }
