@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -19,9 +19,8 @@ export function RepoSelector() {
 
   useEffect(() => {
     async function loadRepos() {
-      const {
-        data: { session },
-      } = await supabaseBrowser.auth.getSession();
+            const supabase = getSupabaseBrowserClient();
+      const { data: { session }, } = await supabase.auth.getSession();
 
       const token =
         session?.provider_token;

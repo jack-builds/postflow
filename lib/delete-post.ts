@@ -1,7 +1,8 @@
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export async function deletePost(postId: string) {
-  const { error } = await supabaseBrowser
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase
     .from("posts")
     .delete()
     .eq("id", postId);

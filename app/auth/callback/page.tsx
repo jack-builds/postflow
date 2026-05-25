@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -10,7 +10,8 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuth = async () => {
       // THIS forces Supabase to finalize session from URL code
-      await supabaseBrowser.auth.exchangeCodeForSession(window.location.href);
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.exchangeCodeForSession(window.location.href);
 
       router.replace("/app");
     };

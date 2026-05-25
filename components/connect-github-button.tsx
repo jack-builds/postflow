@@ -1,11 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export function ConnectGitHubButton() {
   async function handleLogin() {
-    await supabaseBrowser.auth.signInWithOAuth({
+    await getSupabaseBrowserClient().auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: "http://localhost:3000/app",

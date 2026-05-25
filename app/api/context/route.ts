@@ -1,10 +1,16 @@
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+
 
 export async function POST(req: Request) {
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  if (!openaiApiKey) {
+    return Response.json(
+      { error: "OpenAI API key is not set." },
+      { status: 500 }
+    );
+  }
+  const client = new OpenAI({ apiKey: openaiApiKey });
   const { prompt } = await req.json();
 
   const res = await client.chat.completions.create({

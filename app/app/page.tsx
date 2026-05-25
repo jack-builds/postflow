@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
@@ -12,7 +12,8 @@ export default function LandingPage() {
   // -----------------------
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabaseBrowser.auth.getSession();
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
 
       if (data.session) {
         router.push("/new"); // already logged in → skip landing
@@ -26,7 +27,7 @@ export default function LandingPage() {
   // GITHUB LOGIN
   // -----------------------
   const signInWithGitHub = async () => {
-    await supabaseBrowser.auth.signInWithOAuth({
+    await getSupabaseBrowserClient().auth.signInWithOAuth({
       provider: "github",
       options: {
         scopes: "read:user user:email repo",
@@ -40,7 +41,7 @@ export default function LandingPage() {
   // NOTE: not usually used on landing page, but added per request
   // -----------------------
   const signOut = async () => {
-    await supabaseBrowser.auth.signOut();
+    await getSupabaseBrowserClient().auth.signOut();
     window.location.href = "/";
   };
 

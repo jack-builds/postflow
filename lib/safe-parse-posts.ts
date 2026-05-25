@@ -21,8 +21,8 @@ export function safeParsePosts(raw: string): Post[] {
         tone: typeof p.tone === "string" ? p.tone : "dev",
         content: p.content.trim(),
       }));
-  } catch (err) {
-    console.error("❌ Failed to parse AI output:", raw);
+  } catch (err: unknown) {
+    console.error("❌ Failed to parse AI output:", err, raw);
 
     return [];
   }

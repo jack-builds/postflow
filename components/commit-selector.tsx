@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Commit = {
   sha: string;
@@ -26,9 +26,8 @@ export function CommitSelector() {
 
   useEffect(() => {
     async function loadCommits() {
-      const {
-        data: { session },
-      } = await supabaseBrowser.auth.getSession();
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session }, } = await supabase.auth.getSession();
 
       const token =
         session?.provider_token;

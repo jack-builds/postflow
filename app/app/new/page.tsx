@@ -1,22 +1,55 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase-browser";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+
+
+interface Post {
+  id: string;
+  content: string;
+  repo: string;
+  tone: string;
+  status: string;
+  created_at: string;
+}
+
+interface Session {
+  user: { id: string; };
+  provider_token?: string | null;
+}
+
+interface Repo {
+  id: number;
+  name: string;
+  full_name: string;
+}
+
+
+
+interface Commit {
+  sha: string;
+  commit: {
+    message: string;
+    author: {
+      name: string;
+      date: string;
+    };
+  };
+}
 
 export default function NewPage() {
   // -----------------------
   // AUTH
   // -----------------------
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   // -----------------------
   // REPOS
   // -----------------------
-  const [repos, setRepos] = useState<any[]>([]);
+  const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setSelectedRepo] =
-    useState<any>(null);
+    useState<Repo | null>(null);
 
   const [reposExpanded, setReposExpanded] =
     useState(true);
@@ -27,21 +60,19 @@ export default function NewPage() {
   // -----------------------
   // COMMITS
   // -----------------------
-  const [commits, setCommits] = useState<any[]>(
-    []
-  );
+  const [commits, setCommits] = useState<Commit[]>([]);
 
   const [loadingCommits, setLoadingCommits] =
     useState(false);
 
   const [selectedCommits, setSelectedCommits] =
-    useState<any[]>([]);
+    useState<Commit[]>([]);
 
   // -----------------------
   // GENERATION
   // -----------------------
   const [generatedPosts, setGeneratedPosts] =
-    useState<any[]>([]);
+    useState<Post[]>([]);
 
   const [generating, setGenerating] =
     useState(false);
@@ -62,8 +93,8 @@ export default function NewPage() {
   // -----------------------
   useEffect(() => {
     const loadSession = async () => {
-      const { data } =
-        await supabaseBrowser.auth.getSession();
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
 
       setSession(data.session);
       setLoading(false);
@@ -73,7 +104,7 @@ export default function NewPage() {
 
     const {
       data: { subscription },
-    } = supabaseBrowser.auth.onAuthStateChange(
+    } = getSupabaseBrowserClient().auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setLoading(false);
@@ -89,7 +120,7 @@ export default function NewPage() {
   // CONNECT GITHUB
   // -----------------------
   const connectGitHub = async () => {
-    await supabaseBrowser.auth.signInWithOAuth({
+    await getSupabaseBrowserClient().auth.signInWithOAuth({
       provider: "github",
       options: {
         scopes: "read:user user:email repo",
@@ -101,7 +132,7 @@ export default function NewPage() {
   // -----------------------
   // FETCH REPOS
   // -----------------------
-  const fetchRepos = async () => {
+  const fetchRepos = useCallback(async () => {
     const token = session?.provider_token;
 
     if (!token) return;
@@ -121,12 +152,12 @@ export default function NewPage() {
 
     setRepos(data);
     setLoadingRepos(false);
-  };
+  }, [session?.provider_token]);
 
   // -----------------------
   // FETCH COMMITS
   // -----------------------
-  const fetchCommits = async (repo: any) => {
+  const fetchCommits = useCallback(async (repo: Repo) => {
     const token = session?.provider_token;
 
     if (!token || !repo) return;
@@ -146,12 +177,12 @@ export default function NewPage() {
 
     setCommits(data);
     setLoadingCommits(false);
-  };
+  }, [session?.provider_token]);
 
   // -----------------------
   // TOGGLE COMMIT
   // -----------------------
-  const toggleCommit = (commit: any) => {
+  const toggleCommit = useCallback((commit: Commit) => {
     setSelectedCommits((prev) => {
       const exists = prev.find(
         (c) => c.sha === commit.sha
@@ -165,7 +196,7 @@ export default function NewPage() {
 
       return [...prev, commit];
     });
-  };
+  }, [setSelectedCommits]);
 
   // -----------------------
   // GENERATE POSTS
@@ -174,7 +205,7 @@ export default function NewPage() {
     if (!selectedCommits.length) return;
     const {
       data: { session },
-    } = await supabaseBrowser.auth.getSession();
+    } = await getSupabaseBrowserClient().auth.getSession();
 
     setGenerating(true);
 
@@ -220,11 +251,14 @@ export default function NewPage() {
   // -----------------------
   // AUTO FETCH REPOS
   // -----------------------
+
   useEffect(() => {
-    if (session) {
+    if (session?.provider_token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRepos();
     }
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.provider_token]);
 
   // -----------------------
   // LOADING
@@ -359,7 +393,7 @@ export default function NewPage() {
                 )}
 
                 <div className="space-y-2">
-                  {commits.map((commit: any) => {
+                  {commits.map((commit: Commit) => {
                     const isSelected =
                       selectedCommits.some(
                         (c) => c.sha === commit.sha
@@ -465,16 +499,13 @@ export default function NewPage() {
               max={5}
               value={postCount}
               onChange={(e) =>
-                setPostCount(
-                  Number(e.target.value)
-                )
+                setPostCount(Number(e.target.value))
               }
               className="w-full"
             />
 
             <div className="text-sm text-zinc-500">
-              {postCount} post
-              {postCount > 1 ? "s" : ""}
+              Generate {postCount} posts.
             </div>
           </div>
 
@@ -487,29 +518,21 @@ export default function NewPage() {
             <textarea
               value={extraInstructions}
               onChange={(e) =>
-                setExtraInstructions(
-                  e.target.value
-                )
+                setExtraInstructions(e.target.value)
               }
-              placeholder="Optional generation instructions..."
-              className="min-h-[100px] w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
+              placeholder="e.g. Make them funny and engaging."
+              rows={3}
+              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
 
           {/* GENERATE BUTTON */}
           <button
             onClick={generatePosts}
-            disabled={
-              generating ||
-              !selectedCommits.length
-            }
-            className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!selectedCommits.length || generating}
+            className="w-full rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
           >
-            {generating
-              ? "Generating Posts..."
-              : `Generate ${postCount} Post${
-                  postCount > 1 ? "s" : ""
-                }`}
+            {generating ? "Generating..." : "Generate Posts"}
           </button>
         </div>
       </div>
@@ -530,7 +553,7 @@ export default function NewPage() {
 
           <div className="space-y-4">
             {generatedPosts.map(
-              (post: any, index: number) => (
+              (post: Post, index: number) => (
                 <div
                   key={index}
                   className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950"

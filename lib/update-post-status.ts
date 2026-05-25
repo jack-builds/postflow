@@ -1,10 +1,11 @@
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export async function updatePostStatus(
   postId: string,
   status: "draft" | "approved" | "queued"
 ) {
-  const { error } = await supabaseBrowser
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase
     .from("posts")
     .update({ status })
     .eq("id", postId);
