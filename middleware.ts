@@ -35,7 +35,11 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const isProtected = req.nextUrl.pathname.startsWith("/app");
+  const isProtected = 
+    req.nextUrl.pathname.startsWith("/dashboard") ||
+    req.nextUrl.pathname.startsWith("/new") ||
+    req.nextUrl.pathname.startsWith("/posts") ||
+    req.nextUrl.pathname.startsWith("/settings");
 
   if (isProtected && !session) {
     const url = req.nextUrl.clone();
@@ -47,5 +51,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*"],
+  matcher: ["/dashboard/:path*", "/new/:path*", "/posts/:path*", "/settings/:path*"],
 };

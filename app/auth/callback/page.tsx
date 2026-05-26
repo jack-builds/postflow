@@ -13,7 +13,7 @@ export default function AuthCallback() {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.exchangeCodeForSession(window.location.href);
 
-      router.replace("/app");
+      router.replace("/dashboard");
     };
 
     handleAuth();

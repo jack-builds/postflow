@@ -11,7 +11,7 @@ export default function AppLayout({
         {/* SIDEBAR */}
         <aside className="fixed h-screen w-64 border-r border-zinc-200 p-6 dark:border-zinc-800">
           <div className="mb-10">
-            <Link href="/app" className="block">
+            <Link href="/dashboard" className="block">
               <h1 className="text-xl font-bold tracking-tight">Postflow</h1>
               <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium mt-1">
                 Build in public engine
@@ -21,21 +21,21 @@ export default function AppLayout({
 
           <nav className="space-y-1 text-sm">
             <Link
-              href="/app"
+              href="/dashboard"
               className="flex items-center gap-3 rounded-xl px-4 py-2.5 font-medium transition hover:bg-zinc-100 dark:hover:bg-zinc-900"
             >
               Dashboard
             </Link>
 
             <Link
-              href="/app/new"
+              href="/new"
               className="flex items-center gap-3 rounded-xl px-4 py-2.5 font-medium transition hover:bg-zinc-100 dark:hover:bg-zinc-900"
             >
               Create
             </Link>
 
             <Link
-              href="/app/posts"
+              href="/posts"
               className="flex items-center gap-3 rounded-xl px-4 py-2.5 font-medium transition hover:bg-zinc-100 dark:hover:bg-zinc-900"
             >
               Posts
@@ -43,7 +43,7 @@ export default function AppLayout({
 
             <div className="pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-900">
               <Link
-                href="/app/settings"
+                href="/settings"
                 className="flex items-center gap-3 rounded-xl px-4 py-2.5 font-medium transition hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500"
               >
                 Settings

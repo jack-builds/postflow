@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Recent Posts</h2>
-          <Link href="/app/posts" className="text-sm text-zinc-500 hover:underline">
+          <Link href="/posts" className="text-sm text-zinc-500 hover:underline">
             View all
           </Link>
         </div>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-dashed border-zinc-200 p-12 text-center dark:border-zinc-800">
             <p className="text-sm text-zinc-500">No posts generated yet.</p>
             <Link
-              href="/app/new"
+              href="/new"
               className="mt-4 inline-block rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
               Create your first post
