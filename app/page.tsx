@@ -1,4 +1,34 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import Link from "next/link";
+
 export default function Home() {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+      setLoading(false);
+    };
+    loadSession();
+  }, []);
+
+  const handleLogin = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        scopes: "read:user,user:email,repo",
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+  };
+
   return (
     <main className="min-h-screen bg-white text-black">
 
@@ -8,16 +38,27 @@ export default function Home() {
           Postflow
         </div>
 
-        <div className="flex gap-6 text-sm text-gray-600">
-          <a href="/dashboard" className="hover:text-black transition">
+        <div className="flex gap-6 text-sm text-gray-600 items-center">
+          <Link href="/dashboard" className="hover:text-black transition">
             Dashboard
-          </a>
-          <a href="/pricing" className="hover:text-black transition">
+          </Link>
+          <Link href="/pricing" className="hover:text-black transition">
             Pricing
-          </a>
-          <a href="/new" className="hover:text-black transition">
-            Get Started
-          </a>
+          </Link>
+          {loading ? (
+            <div className="h-8 w-20 bg-gray-100 animate-pulse rounded-xl"></div>
+          ) : session ? (
+            <Link href="/new" className="px-4 py-2 bg-black text-white rounded-xl text-xs hover:opacity-90 transition">
+              Create Post
+            </Link>
+          ) : (
+            <button 
+              onClick={handleLogin}
+              className="px-4 py-2 bg-black text-white rounded-xl text-xs hover:opacity-90 transition"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </header>
 
@@ -32,9 +73,12 @@ export default function Home() {
         </p>
 
         <div className="mt-8 flex items-center justify-center gap-4">
-          <a href="/new" className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition inline-block">
+          <button 
+            onClick={handleLogin}
+            className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition inline-block"
+          >
             Start building workflow
-          </a>
+          </button>
 
           <a href="#features" className="px-6 py-3 border rounded-xl text-sm hover:bg-gray-50 transition inline-block">
             Learn how it works
@@ -82,12 +126,15 @@ export default function Home() {
             Start for free, upgrade to Pro anytime. No credit card required.
           </p>
           <div className="flex gap-4 justify-center">
-            <a href="/new" className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition inline-block">
+            <button 
+              onClick={handleLogin}
+              className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition inline-block"
+            >
               Get Started Free
-            </a>
-            <a href="/pricing" className="px-6 py-3 border border-black rounded-xl text-sm hover:bg-black hover:text-white transition inline-block">
+            </button>
+            <Link href="/pricing" className="px-6 py-3 border border-black rounded-xl text-sm hover:bg-black hover:text-white transition inline-block">
               View Pricing
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -95,9 +142,9 @@ export default function Home() {
       {/* FOOTER */}
       <footer className="border-t py-10 text-center text-xs text-gray-500 space-y-2">
         <div className="flex gap-4 justify-center">
-          <a href="/dashboard" className="text-gray-600 hover:text-black transition">Dashboard</a>
-          <a href="/pricing" className="text-gray-600 hover:text-black transition">Pricing</a>
-          <a href="/new" className="text-gray-600 hover:text-black transition">Create Posts</a>
+          <Link href="/dashboard" className="text-gray-600 hover:text-black transition">Dashboard</Link>
+          <Link href="/pricing" className="text-gray-600 hover:text-black transition">Pricing</Link>
+          <Link href="/new" className="text-gray-600 hover:text-black transition">Create Posts</Link>
         </div>
         <div>Postflow — build → capture → share</div>
         <div className="text-[10px] text-gray-400">
