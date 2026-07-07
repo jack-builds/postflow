@@ -43,6 +43,7 @@ export default function NewPage() {
   // -----------------------
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // -----------------------
   // REPOS
@@ -57,6 +58,8 @@ export default function NewPage() {
   const [loadingRepos, setLoadingRepos] =
     useState(false);
 
+  const [reposError, setReposError] = useState<string | null>(null);
+
   // -----------------------
   // COMMITS
   // -----------------------
@@ -68,6 +71,8 @@ export default function NewPage() {
   const [selectedCommits, setSelectedCommits] =
     useState<Commit[]>([]);
 
+  const [commitsError, setCommitsError] = useState<string | null>(null);
+
   // -----------------------
   // GENERATION
   // -----------------------
@@ -76,6 +81,8 @@ export default function NewPage() {
 
   const [generating, setGenerating] =
     useState(false);
+
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // -----------------------
   // SETTINGS
@@ -93,18 +100,25 @@ export default function NewPage() {
   // -----------------------
   useEffect(() => {
     const loadSession = async () => {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data } = await supabase.auth.getSession();
 
-      setSession(data.session);
-      setLoading(false);
+        setSession(data.session);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load session:", err);
+        setError("Failed to load session. Please refresh the page.");
+        setLoading(false);
+      }
     };
 
     loadSession();
 
+    const supabase = getSupabaseBrowserClient();
     const {
       data: { subscription },
-    } = getSupabaseBrowserClient().auth.onAuthStateChange(
+    } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setLoading(false);
@@ -120,13 +134,20 @@ export default function NewPage() {
   // CONNECT GITHUB
   // -----------------------
   const connectGitHub = async () => {
-    await getSupabaseBrowserClient().auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        scopes: "read:user user:email repo",
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      setError(null);
+      await getSupabaseBrowserClient().auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          scopes: "read:user,user:email,repo",
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to connect to GitHub";
+      console.error("GitHub OAuth failed:", err);
+      setError(errorMsg);
+    }
   };
 
   // -----------------------
@@ -138,20 +159,40 @@ export default function NewPage() {
     if (!token) return;
 
     setLoadingRepos(true);
+    setReposError(null);
 
-    const res = await fetch(
-      "https://api.github.com/user/repos",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    try {
+      const res = await fetch(
+        "https://api.github.com/user/repos",
+        {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
       }
-    );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    setRepos(data);
-    setLoadingRepos(false);
+      if (Array.isArray(data)) {
+        setRepos(data);
+      } else {
+        console.error("Unexpected GitHub response:", data);
+        setRepos([]);
+        setReposError("Unexpected response format from GitHub");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to fetch repositories";
+      console.error("Failed to fetch repos:", err);
+      setRepos([]);
+      setReposError(errorMsg);
+    } finally {
+      setLoadingRepos(false);
+    }
   }, [session?.provider_token]);
 
   // -----------------------
@@ -163,20 +204,40 @@ export default function NewPage() {
     if (!token || !repo) return;
 
     setLoadingCommits(true);
+    setCommitsError(null);
 
-    const res = await fetch(
-      `https://api.github.com/repos/${repo.full_name}/commits`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${repo.full_name}/commits`,
+        {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
       }
-    );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    setCommits(data);
-    setLoadingCommits(false);
+      if (Array.isArray(data)) {
+        setCommits(data);
+      } else {
+        console.error("Unexpected GitHub response:", data);
+        setCommits([]);
+        setCommitsError("Unexpected response format from GitHub");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to fetch commits";
+      console.error("Failed to fetch commits:", err);
+      setCommits([]);
+      setCommitsError(errorMsg);
+    } finally {
+      setLoadingCommits(false);
+    }
   }, [session?.provider_token]);
 
   // -----------------------
@@ -203,11 +264,13 @@ export default function NewPage() {
   // -----------------------
   const generatePosts = async () => {
     if (!selectedCommits.length) return;
+    const supabase = getSupabaseBrowserClient();
     const {
-      data: { session },
-    } = await getSupabaseBrowserClient().auth.getSession();
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
 
     setGenerating(true);
+    setGenerationError(null);
 
     try {
       const res = await fetch(
@@ -224,19 +287,30 @@ export default function NewPage() {
             count: postCount,
             extraInstructions,
             repo: selectedRepo?.full_name,
-            userId: session?.user?.id,
+            userId: currentSession?.user?.id,
           }),
         }
       );
 
       const data = await res.json();
 
-      setGeneratedPosts(data.posts || []);
-    } catch (err) {
-      console.error(err);
-    }
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}: Failed to generate posts`);
+      }
 
-    setGenerating(false);
+      if (data.success && data.posts) {
+        setGeneratedPosts(data.posts);
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to generate posts";
+      console.error("Generation error:", err);
+      setGenerationError(errorMsg);
+      setGeneratedPosts([]);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   // -----------------------
@@ -254,11 +328,9 @@ export default function NewPage() {
 
   useEffect(() => {
     if (session?.provider_token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRepos();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.provider_token]);
+  }, [session?.provider_token, fetchRepos]);
 
   // -----------------------
   // LOADING
@@ -284,6 +356,14 @@ export default function NewPage() {
           developer content.
         </p>
       </div>
+
+      {/* ERROR DISPLAY */}
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <div className="font-medium">Error</div>
+          <div>{error}</div>
+        </div>
+      )}
 
       {/* CONTEXT SECTION */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
@@ -337,6 +417,13 @@ export default function NewPage() {
               </div>
             </button>
 
+            {/* REPO ERROR */}
+            {reposError && (
+              <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-700 dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-300">
+                {reposError}
+              </div>
+            )}
+
             {/* REPO LIST */}
             {reposExpanded && (
               <div className="grid gap-2">
@@ -385,6 +472,12 @@ export default function NewPage() {
                     generation context.
                   </p>
                 </div>
+
+                {commitsError && (
+                  <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-700 dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-300">
+                    {commitsError}
+                  </div>
+                )}
 
                 {loadingCommits && (
                   <div className="text-sm text-zinc-500">
@@ -525,6 +618,13 @@ export default function NewPage() {
               className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
+
+          {/* GENERATION ERROR */}
+          {generationError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+              {generationError}
+            </div>
+          )}
 
           {/* GENERATE BUTTON */}
           <button

@@ -9,10 +9,10 @@ export default function Home() {
         </div>
 
         <div className="flex gap-6 text-sm text-gray-600">
-          <a href="#" className="hover:text-black transition">
-            Login
+          <a href="/dashboard" className="hover:text-black transition">
+            Dashboard
           </a>
-          <a href="#" className="hover:text-black transition">
+          <a href="/new" className="hover:text-black transition">
             Get Started
           </a>
         </div>
@@ -29,17 +29,17 @@ export default function Home() {
         </p>
 
         <div className="mt-8 flex items-center justify-center gap-4">
-          <button className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition">
+          <a href="/new" className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition inline-block">
             Start building workflow
-          </button>
+          </a>
 
-          <button className="px-6 py-3 border rounded-xl text-sm hover:bg-gray-50 transition">
+          <a href="#features" className="px-6 py-3 border rounded-xl text-sm hover:bg-gray-50 transition inline-block">
             Learn how it works
-          </button>
+          </a>
         </div>
       </section>
 
-      {/* PRODUCT EXPLANATION (NO FAKE DEMO) */}
+      {/* PRODUCT EXPLANATION */}
       <section className="max-w-3xl mx-auto px-6 pb-20 text-center">
         <div className="text-sm text-gray-600 space-y-6">
 
@@ -59,7 +59,7 @@ export default function Home() {
       </section>
 
       {/* FEATURES */}
-      <section className="max-w-3xl mx-auto px-6 pb-24 grid gap-4 text-center">
+      <section id="features" className="max-w-3xl mx-auto px-6 pb-24 grid gap-4 text-center">
         <div className="text-sm text-gray-600">
           ✦ Capture dev progress in seconds
         </div>
@@ -73,6 +73,10 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className="border-t py-10 text-center text-xs text-gray-500 space-y-2">
+        <div className="flex gap-4 justify-center">
+          <a href="/dashboard" className="text-gray-600 hover:text-black transition">Dashboard</a>
+          <a href="/new" className="text-gray-600 hover:text-black transition">Create Posts</a>
+        </div>
         <div>Postflow — build → capture → share</div>
         <div className="text-[10px] text-gray-400">
           A workflow tool for developers building in public

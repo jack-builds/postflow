@@ -9,11 +9,22 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleAuth = async () => {
-      // THIS forces Supabase to finalize session from URL code
-      const supabase = getSupabaseBrowserClient();
-      await supabase.auth.exchangeCodeForSession(window.location.href);
+      try {
+        // THIS forces Supabase to finalize session from URL code
+        const supabase = getSupabaseBrowserClient();
+        const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
 
-      router.replace("/dashboard");
+        if (error) {
+          console.error("Auth exchange error:", error);
+          router.replace("/");
+          return;
+        }
+
+        router.replace("/dashboard");
+      } catch (err) {
+        console.error("Auth callback error:", err);
+        router.replace("/");
+      }
     };
 
     handleAuth();

@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+  let res = NextResponse.next();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -25,6 +25,12 @@ export async function middleware(req: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => {
             req.cookies.set(name, value);
+            res = NextResponse.next({
+              request: {
+                headers: req.headers,
+              },
+            });
+            res.cookies.set(name, value);
           });
         },
       },
@@ -46,6 +52,11 @@ export async function middleware(req: NextRequest) {
     url.pathname = "/";
     return NextResponse.redirect(url);
   }
+
+  // Ensure cookies are persisted in response
+  req.cookies.getAll().forEach(({ name, value }) => {
+    res.cookies.set(name, value);
+  });
 
   return res;
 }

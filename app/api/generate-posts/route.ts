@@ -132,7 +132,20 @@ export async function POST(req: Request) {
     const { commits, tone, count, extraInstructions, repo } = requestBody;
     const userId = session.user.id;
 
-    // 3. Generate posts using AI
+    // 3. Validate commits structure
+    for (const commit of commits) {
+      if (!commit.commit || !commit.commit.message) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid commit structure",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 4. Generate posts using AI
     const commitMessages = commits
       .map((c: Commit) => c.commit.message)
       .join("\n");
@@ -157,7 +170,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Save to Supabase
+    // Validate posts output
+    if (!Array.isArray(posts) || posts.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No posts were generated. Please try again with different commits.",
+        },
+        { status: 500 }
+      );
+    }
+
+    // 5. Save to Supabase
     const rows = posts.map((post: { content: string }) => ({
       user_id: userId,
       repo,

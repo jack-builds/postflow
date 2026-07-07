@@ -7,13 +7,14 @@ export async function fetchCommits(
     `https://api.github.com/repos/${owner}/${repo}/commits`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `token ${token}`,
+        Accept: "application/vnd.github.v3+json",
       },
     }
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch commits");
+    throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
   }
 
   return res.json();

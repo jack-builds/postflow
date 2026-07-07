@@ -5,13 +5,14 @@ export async function fetchGitHubRepos(
     "https://api.github.com/user/repos",
     {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `token ${accessToken}`,
+        Accept: "application/vnd.github.v3+json",
       },
     }
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch repos");
+    throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
   }
 
   return res.json();
