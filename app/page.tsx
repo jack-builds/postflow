@@ -12,6 +12,9 @@ export default function Home() {
           <a href="/dashboard" className="hover:text-black transition">
             Dashboard
           </a>
+          <a href="/pricing" className="hover:text-black transition">
+            Pricing
+          </a>
           <a href="/new" className="hover:text-black transition">
             Get Started
           </a>
@@ -71,10 +74,29 @@ export default function Home() {
         </div>
       </section>
 
+      {/* CTA */}
+      <section className="max-w-3xl mx-auto px-6 pb-24 text-center">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-12 dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="text-2xl font-bold mb-4">Ready to build in public?</h2>
+          <p className="text-gray-600 mb-6">
+            Start for free, upgrade to Pro anytime. No credit card required.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <a href="/new" className="px-6 py-3 bg-black text-white rounded-xl text-sm hover:opacity-90 transition inline-block">
+              Get Started Free
+            </a>
+            <a href="/pricing" className="px-6 py-3 border border-black rounded-xl text-sm hover:bg-black hover:text-white transition inline-block">
+              View Pricing
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="border-t py-10 text-center text-xs text-gray-500 space-y-2">
         <div className="flex gap-4 justify-center">
           <a href="/dashboard" className="text-gray-600 hover:text-black transition">Dashboard</a>
+          <a href="/pricing" className="text-gray-600 hover:text-black transition">Pricing</a>
           <a href="/new" className="text-gray-600 hover:text-black transition">Create Posts</a>
         </div>
         <div>Postflow — build → capture → share</div>
